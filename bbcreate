@@ -1,0 +1,94 @@
+#!/usr/bin/env perl
+#
+# name:      bbcreate, create a bitbucket repository from the command line
+# author:    Xu Xiaodong <xxdlhy@gmail.com>
+# license:   GPL
+# created:   2011 Apr 13
+# modified:  2011 Nov 06
+#
+
+use strict;
+use warnings;
+
+use LWP::UserAgent;
+use MIME::Base64;
+use Getopt::Long;
+
+my ( $name, $desc, $scm, $is_private ) = ( '', '', '', 0 );
+
+GetOptions(
+  'n|name=s' => \$name,
+  'd|desc=s' => \$desc,
+  's|scm=s'  => \$scm,
+  'p|priv'   => \$is_private,
+);
+
+if ($name and $scm) {
+  create( $name, $desc, $scm, $is_private );
+  init($name);
+}
+else {
+  die <<"USAGE";
+Usage: $0 -n <name> [-d <desc>] -s <scm> [-p]
+
+    -n, --name name         Repository name
+    -d, --desc description  Project description
+    -s, --scm  scm          Repository type
+    -p, --priv private      Set repository as private
+USAGE
+}
+
+sub account {
+  my ( $user, $pass );
+
+  open my ($in_fh), '<', "$ENV{HOME}/.hgrc"
+    or die "Can't open .hgrc: $!\n";
+
+  while (<$in_fh>) {
+    next if /\A[#;]/;
+    next if /\A\s*\Z/;
+
+    $user = $1 if /\.username\s+=\s+(.*)\Z/;
+    $pass = $1 if /\.password\s+=\s+(.*)\Z/;
+  }
+
+  close $in_fh;
+
+  return ( $user, $pass );
+}
+
+sub create {
+  my ( $name, $desc, $scm, $is_private ) = @_;
+  my %param;
+
+  $param{name}        = $name       if $name;
+  $param{description} = $desc       if $desc;
+  $param{scm}         = $scm        if $scm;
+  $param{is_private}  = $is_private if $is_private;
+
+  my $url = 'https://api.bitbucket.org/1.0/repositories/';
+  my ( $user, $pass ) = account();
+  my $ua = LWP::UserAgent->new();
+
+  $ua->default_header(
+    authorization => 'Basic ' . encode_base64( $user . ':' . $pass ) );
+
+  my $resp = $ua->post( $url, \%param );
+
+  if ( $resp->is_success ) {
+    say $resp->decoded_content;
+  }
+  else {
+    die $resp->status_line;
+  }
+}
+
+sub init {
+  my ($repo) = @_;
+  my $user   = ( account() )[0];
+  my $url    = "https://bitbucket.org/$user/$repo";
+
+  system 'hg', 'clone', $url;
+}
+
+# vim: ai:et:ts=2:sw=2:tw=78:ft=perl
