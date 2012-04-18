@@ -12,10 +12,9 @@ Open ~/.hgrc, then add the following lines:
 
 ### Usage
 
-   % bbcreate
-   Usage: bbcreate -n <name> [-d <desc>] -s <scm> [-p]
+   % bbcreate -n <name> [-d <desc>] -s <scm> [-p]
    
-       -n, --name name         Repository name
-       -d, --desc description  Project description
-       -s, --scm  scm          Repository type
-       -p, --priv private      Set repository as private
+   -n, --name name         Repository name
+   -d, --desc description  Project description
+   -s, --scm  scm          Repository type
+   -p, --priv private      Set repository as private
